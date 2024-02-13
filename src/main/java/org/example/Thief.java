@@ -5,20 +5,26 @@ package org.example;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.sleep;
 
 
-public class Thief extends Thread {
+public class Thief implements Runnable {
     private BlockingQueue<Item> apartment;
     private Backpack backpack;
     private List<Item> stolenItems = new ArrayList<>();
 
-    private Object lock;
     private int totalWeight;
 
+    ReentrantLock lock;
+    Condition condition;
 
-
-    public Thief(BlockingQueue<Item> apartment, int backpackCapacity, Object lock) {
+    public Thief(BlockingQueue<Item> apartment, int backpackCapacity, ReentrantLock lock, Condition condition) {
         this.lock = lock;
+        this.condition = condition;
         this.apartment = apartment;
         this.backpack = new Backpack(backpackCapacity);
     }
@@ -36,6 +42,9 @@ public class Thief extends Thread {
     }
 
     public void addItems(BlockingQueue<Item> apartment) throws InterruptedException {
+        if (apartment.isEmpty()) {
+            condition.await();
+        }
         Item item = apartment.stream()
                 .filter(item1 -> item1.getWeight() < backpack.getBackpackCapacity())
                 .max(Comparator.comparing(Item::getValue))
@@ -44,31 +53,34 @@ public class Thief extends Thread {
         if (item != null) {
             addItemsToBackpack(item);
             apartment.remove(item);
-//                    } else {
-//                        System.out.println("Thief's backpack is full, he leaves");
-////                        break;
-//                    }
+            condition.signal();
         }
     }
 
 
     @Override
     public void run() {
-        synchronized (lock) {
+        lock.lock();
+        try {
             while (true) {
-                try {
-                    totalWeight = 0;
-                    System.out.println("Thief enters the apartment");
-                    addItems(apartment);
-                    System.out.println("Thief leaves the apartment");
-                    sleep(1000);
-                    lock.notify();
-                    lock.wait();
-
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                System.out.println("thief is await");
+                condition.await();
+                totalWeight = 0;
+                System.out.println("Thief got the signal and enters the apartment");
+                addItems(apartment);
+                if (totalWeight > backpack.getBackpackCapacity()){
+                    System.out.println("totalWeight > backpack.getBackpackCapacity()");
+                    System.out.println("backPack is full");
+                    condition.signal();
+                    break;
                 }
+                System.out.println("Thief leaves the apartment");
             }
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            lock.unlock();
         }
     }
 }

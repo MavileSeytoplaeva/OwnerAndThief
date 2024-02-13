@@ -1,6 +1,8 @@
 package org.example;
 
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 // Необходимо реализовать многопоточное приложение, которое решает следующую задачу:
@@ -30,12 +32,16 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
         BlockingQueue<Item> apartment = new LinkedBlockingQueue<>();
         Semaphore sem = new Semaphore(2);
+        ReentrantLock lock = new ReentrantLock();
+        Condition condition = lock.newCondition();
+        Owner owner = new Owner(sem, apartment, lock, condition);
+        Thief thief = new Thief(apartment, 20, lock, condition);
+        Thread thief1 = new Thread(thief);
+        Thread owner1 = new Thread(owner);
+//        Thread owner2 = new Thread(owner);
+        owner1.start();
+        thief1.start();
+//        owner2.start();
 
-        final Object lock = new Object();
 
-        while (true) {
-            new Owner(sem, apartment, lock).start();
-            new Owner(sem, apartment, lock).start();
-            new Thief(apartment, 15, lock).start();
-        }
     }}
