@@ -1,5 +1,10 @@
 package org.example;
 
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,19 +34,38 @@ import java.util.concurrent.locks.ReentrantLock;
 //3. Воров может быть 1..m.
 //4. Потоки Воров со ВЗАИМНОЙ блокировкой: воровать одновременно может только 1 вор."
 public class Main {
-    public static void main(String[] args) throws InterruptedException {
-        BlockingQueue<Item> apartment = new LinkedBlockingQueue<>();
-        Semaphore sem = new Semaphore(2);
+    public static void main(String[] args) {
+        ConcurrentLinkedQueue<Item> apartment = new ConcurrentLinkedQueue<>();
+        Set<Thread> threads = new HashSet<>();
+        int count = 0;
         ReentrantLock lock = new ReentrantLock();
         Condition condition = lock.newCondition();
-        Owner owner = new Owner(sem, apartment, lock, condition);
-        Thief thief = new Thief(apartment, 20, lock, condition);
-        Thread thief1 = new Thread(thief);
-        Thread owner1 = new Thread(owner);
-//        Thread owner2 = new Thread(owner);
-        owner1.start();
-        thief1.start();
-//        owner2.start();
+        int owners = (int) (Math.random() * 10 + 3);
+        Semaphore sem = new Semaphore(owners);
+        int thieves = (int) (Math.random() * 10 + 3);
+        System.out.println(owners);
+        System.out.println(thieves);
+        for (int i = 0; i < owners; i++) {
+            threads.add(new Owner(sem, apartment, lock, condition));
+        }
+        for (int i = 0; i < thieves; i++) {
+            threads.add(new Thief(apartment, (int) (Math.random() * 10 + 5), lock, condition));
+        }
 
+        try {
+            for (Thread thread : threads) {
+                if (thread instanceof Owner) {
+                    ((Owner) thread).addItem();
+                    count++;
+                } else if (thread instanceof Thief) {
+                    ((Thief) thread).stealItems(apartment);
 
-    }}
+                }
+            }
+            System.out.println(count + " items were brought");
+            System.out.println("items left in apartment " + apartment.size() + " " + apartment.toString());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
