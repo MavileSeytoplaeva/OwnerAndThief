@@ -9,6 +9,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.lang.Thread.sleep;
+
 
 // Необходимо реализовать многопоточное приложение, которое решает следующую задачу:
 //Есть два типа пользователя (два типа потока). Один - Хозяин, имеет в своем арсенале список вещей (Вещь: цена и вес),
@@ -34,8 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
 //3. Воров может быть 1..m.
 //4. Потоки Воров со ВЗАИМНОЙ блокировкой: воровать одновременно может только 1 вор."
 public class Main {
-    public static void main(String[] args) {
-        ConcurrentLinkedQueue<Item> apartment = new ConcurrentLinkedQueue<>();
+    public static void main(String[] args) throws InterruptedException {
         Set<Thread> threads = new HashSet<>();
         int count = 0;
         ReentrantLock lock = new ReentrantLock();
@@ -45,27 +46,19 @@ public class Main {
         int thieves = (int) (Math.random() * 10 + 3);
         System.out.println(owners);
         System.out.println(thieves);
+        Apartment apartment = new Apartment(lock);
         for (int i = 0; i < owners; i++) {
-            threads.add(new Owner(sem, apartment, lock, condition));
+            threads.add(new Owner(sem, apartment.apartmentItems, lock, apartment));
         }
         for (int i = 0; i < thieves; i++) {
-            threads.add(new Thief(apartment, (int) (Math.random() * 10 + 5), lock, condition));
+            threads.add(new Thief(apartment.apartmentItems, (int) (Math.random() * 10 + 5), lock, apartment));
         }
+        Thread apartmentThread = new Thread(apartment);
+        apartmentThread.start();
+        threads.forEach(Thread::start);
+        sleep(500);
+        System.out.println(owners + " items were brought");
+        System.out.println("Items left in apartment " + apartment.apartmentItems.size() + " " + apartment.apartmentItems.toString());
 
-        try {
-            for (Thread thread : threads) {
-                if (thread instanceof Owner) {
-                    ((Owner) thread).addItem();
-                    count++;
-                } else if (thread instanceof Thief) {
-                    ((Thief) thread).stealItems(apartment);
-
-                }
-            }
-            System.out.println(count + " items were brought");
-            System.out.println("items left in apartment " + apartment.size() + " " + apartment.toString());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

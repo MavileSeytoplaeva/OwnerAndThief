@@ -3,7 +3,6 @@ package org.example;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Owner extends Thread {
@@ -13,13 +12,13 @@ public class Owner extends Thread {
     ConcurrentLinkedQueue<Item> apartment;
     Random random = new Random();
     ReentrantLock lock;
-    Condition condition;
-
-    public Owner(Semaphore sem, ConcurrentLinkedQueue<Item> apartment, ReentrantLock lock, Condition condition) {
+    Runnable task;
+    public Owner(Semaphore sem, ConcurrentLinkedQueue<Item> apartment, ReentrantLock lock, Runnable task) {
+        super(task);
         this.sem = sem;
         this.lock = lock;
-        this.condition = condition;
         this.apartment = apartment;
+        this.task = task;
     }
 
     private Item newItem() {
@@ -27,7 +26,6 @@ public class Owner extends Thread {
     }
 
     public void addItem() {
-//        lock.lock();
         try {
             sem.acquire();
             Item item = newItem();
@@ -37,14 +35,12 @@ public class Owner extends Thread {
             sem.release();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        } finally {
-//            lock.unlock();
         }
     }
 
     @Override
     public void run() {
-        addItem();
+        task.run();
     }
 
     @Override
