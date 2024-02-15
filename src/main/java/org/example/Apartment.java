@@ -1,41 +1,34 @@
 package org.example;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class Apartment implements Runnable{
+public class Apartment {
     ConcurrentLinkedQueue<Item> apartmentItems = new ConcurrentLinkedQueue<>();
-    ReentrantLock lock;
+    boolean canComeIn = true;
+    int counter = 0;
 
-    public Apartment(ReentrantLock lock) {
-        this.lock = lock;
-    }
-
-    public void addItems(Thread owner) {
-        if (owner instanceof Owner) {
-            ((Owner) owner).addItem();
+    public synchronized void openDoor(Thread thread) {
+        if (thread instanceof Owner) {
+            canComeIn = true;
+            counter++;
+        } else if (thread instanceof Thief) {
+            canComeIn = false;
         }
     }
 
-    public void stealItems(Thread thief) {
-        if (thief instanceof Thief) {
-            ((Thief) thief).stealItems(apartmentItems);
-        }
-    }
-
-    @Override
-    public void run() {
-        if (Thread.currentThread() instanceof Owner){
-            addItems(Thread.currentThread());
-        } else if (Thread.currentThread() instanceof Thief) {
-                lock.lock();
-                try {
-                    stealItems(Thread.currentThread());
-                } finally {
-                    lock.unlock();
+    public void closeDoor(Thread thread) {
+        synchronized (this) {
+            if (thread instanceof Owner) {
+                counter--;
+                if (counter == 0) {
+                    canComeIn = true;
+                    this.notify();
                 }
+                System.out.println(counter);
+            } else if (thread instanceof Thief) {
+                canComeIn = true;
+                this.notify();
             }
-
-
         }
     }
+}

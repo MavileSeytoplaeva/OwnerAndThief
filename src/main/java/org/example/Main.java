@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -37,28 +38,19 @@ import static java.lang.Thread.sleep;
 //4. Потоки Воров со ВЗАИМНОЙ блокировкой: воровать одновременно может только 1 вор."
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-        Set<Thread> threads = new HashSet<>();
-        int count = 0;
-        ReentrantLock lock = new ReentrantLock();
-        Condition condition = lock.newCondition();
-        int owners = (int) (Math.random() * 10 + 3);
+        AtomicInteger totalItems = new AtomicInteger(0);
+        int owners = (int) (Math.random() * 10 + 5);
         Semaphore sem = new Semaphore(owners);
-        int thieves = (int) (Math.random() * 10 + 3);
-        System.out.println(owners);
-        System.out.println(thieves);
-        Apartment apartment = new Apartment(lock);
-        for (int i = 0; i < owners; i++) {
-            threads.add(new Owner(sem, apartment.apartmentItems, lock, apartment));
-        }
-        for (int i = 0; i < thieves; i++) {
-            threads.add(new Thief(apartment.apartmentItems, (int) (Math.random() * 10 + 5), lock, apartment));
-        }
-        Thread apartmentThread = new Thread(apartment);
-        apartmentThread.start();
-        threads.forEach(Thread::start);
+        int thieves = (int) (Math.random() * 10 + 5);
+        System.out.println("Хозяев: " + owners);
+        System.out.println("Воров: " + thieves);
+        System.out.println("------------");
+        Apartment apartment = new Apartment();
+        ThreadPool threadPool = new ThreadPool(owners,thieves, sem, apartment, totalItems);
+        threadPool.execute(null);
         sleep(500);
-        System.out.println(owners + " items were brought");
-        System.out.println("Items left in apartment " + apartment.apartmentItems.size() + " " + apartment.apartmentItems.toString());
+        System.out.println("Всего принесли " + totalItems + "вещей");
+        System.out.println("Вещи, которые остались в квартире " + apartment.apartmentItems.size() + " " + apartment.apartmentItems);
 
     }
 }

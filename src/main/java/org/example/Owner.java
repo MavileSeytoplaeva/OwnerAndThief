@@ -1,38 +1,51 @@
 package org.example;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Owner extends Thread {
     private Semaphore sem;
-    final String OWNER_BRINGS_ITEM = "Owner %s adds item with weight %s and value %s to the apartment \n";
-    final String OWNER_LEAVES = "Owner leaves";
+    AtomicInteger totalItems;
+
+    final String OWNER_BRINGS_ITEM = "Хозяин %s кладёт вещь весом %s и ценностью %s \n";
+    final String OWNER_ENTERS = "Хозяин пришёл";
+    final String OWNER_LEAVES = "Хозяин ушёл";
+
     ConcurrentLinkedQueue<Item> apartment;
+    final Apartment apartmentCl;
     Random random = new Random();
-    ReentrantLock lock;
-    Runnable task;
-    public Owner(Semaphore sem, ConcurrentLinkedQueue<Item> apartment, ReentrantLock lock, Runnable task) {
-        super(task);
+    private List<Item> backpackWithItems = new ArrayList<>();
+
+    public Owner(Semaphore sem, Apartment apartment, AtomicInteger totalItems) {
         this.sem = sem;
-        this.lock = lock;
-        this.apartment = apartment;
-        this.task = task;
+        this.totalItems = totalItems;
+        this.apartmentCl = apartment;
+        this.apartment = apartment.apartmentItems;
     }
 
-    private Item newItem() {
-        return new Item(random.nextInt(20), random.nextInt(20));
+    public void itemsInBackpack() {
+        int backpackCapacity = random.nextInt(1, 4);
+        for (int i = 0; i < backpackCapacity; i++) {
+            backpackWithItems.add(new Item(random.nextInt(20), random.nextInt(20)));
+        }
+        totalItems.addAndGet(backpackWithItems.size());
     }
 
     public void addItem() {
         try {
             sem.acquire();
-            Item item = newItem();
-            apartment.add(item);
-            System.out.printf(OWNER_BRINGS_ITEM, getName(), item.getWeight(), item.getValue());
-            System.out.println(OWNER_LEAVES);
+            itemsInBackpack();
+            System.out.println(OWNER_ENTERS);
+            backpackWithItems.forEach(item -> {
+                apartment.add(item);
+                System.out.printf(OWNER_BRINGS_ITEM, getName(), item.getWeight(), item.getValue());
+            });
             sem.release();
+            System.out.println(OWNER_LEAVES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -40,7 +53,12 @@ public class Owner extends Thread {
 
     @Override
     public void run() {
-        task.run();
+        apartmentCl.openDoor(Thread.currentThread());
+        if (apartmentCl.canComeIn || apartmentCl.counter >= 1) {
+            addItem();
+            System.out.println(apartmentCl.counter);
+        }
+        apartmentCl.closeDoor(Thread.currentThread());
     }
 
     @Override
@@ -50,4 +68,6 @@ public class Owner extends Thread {
                 '}';
     }
 }
+
+
 

@@ -1,5 +1,3 @@
-
-
 package org.example;
 
 public class Item {
@@ -15,16 +13,8 @@ public class Item {
         return weight;
     }
 
-    public void setWeight(int weight) {
-        this.weight = weight;
-    }
-
     public int getValue() {
         return value;
-    }
-
-    public void setValue(int value) {
-        this.value = value;
     }
 
     @Override
