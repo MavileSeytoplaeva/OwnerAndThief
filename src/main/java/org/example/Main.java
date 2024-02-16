@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
 
 
@@ -38,19 +39,37 @@ import static java.lang.Thread.sleep;
 //4. Потоки Воров со ВЗАИМНОЙ блокировкой: воровать одновременно может только 1 вор."
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-        AtomicInteger totalItems = new AtomicInteger(0);
-        int owners = (int) (Math.random() * 10 + 5);
-        Semaphore sem = new Semaphore(owners);
-        int thieves = (int) (Math.random() * 10 + 5);
-        System.out.println("Хозяев: " + owners);
-        System.out.println("Воров: " + thieves);
+        List<Item> initialListWithItems = new ArrayList<>();
+        int ownersCount = (int) (Math.random() * 10 + 5);
+        int thievesCount = (int) (Math.random() * 10 + 5);
+        System.out.println("Хозяев: " + ownersCount);
+        System.out.println("Воров: " + thievesCount);
         System.out.println("------------");
         Apartment apartment = new Apartment();
-        ThreadPool threadPool = new ThreadPool(owners,thieves, sem, apartment, totalItems);
-        threadPool.execute(null);
-        sleep(500);
-        System.out.println("Всего принесли " + totalItems + "вещей");
-        System.out.println("Вещи, которые остались в квартире " + apartment.apartmentItems.size() + " " + apartment.apartmentItems);
+        ThreadPool threadPool = new ThreadPool(ownersCount, thievesCount, apartment);
 
+        threadPool.getThreads().stream()
+                .filter(thread -> thread instanceof Owner)
+                .forEach(owner -> {
+                    initialListWithItems.addAll(((Owner) owner).getBackpackWithItems());
+                });
+        threadPool.execute(null);
+        threadPool.joinAllThreads();
+
+        List<Item> listOfItemsFromThiefBackpacks = ThiefBackpackItems.getThiefBackpackItems();
+        List<Item> listOfItemsLeftInApartment = apartment.getApartmentItems().stream().toList();
+        List<Item> newListOfItemsToCompare = new ArrayList<>();
+        newListOfItemsToCompare.addAll(listOfItemsLeftInApartment);
+        newListOfItemsToCompare.addAll(listOfItemsFromThiefBackpacks);
+
+        System.out.println("Всего принесли " + initialListWithItems.size() + " вещей");
+        System.out.println("В квартире остались " + listOfItemsLeftInApartment.size() + " вещей: " + listOfItemsLeftInApartment);
+        System.out.println("В рюкзаках нашли " + listOfItemsFromThiefBackpacks.size() + " вещей:" + listOfItemsFromThiefBackpacks);
+        if (initialListWithItems.size() == newListOfItemsToCompare.size()
+                && initialListWithItems.containsAll(newListOfItemsToCompare)) {
+            System.out.println("Никакие вещи не потерялись");
+        } else {
+            throw new RuntimeException("Где-то потеряли вещи");
+        }
     }
 }

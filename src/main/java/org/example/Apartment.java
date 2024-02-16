@@ -3,32 +3,47 @@ package org.example;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Apartment {
-    ConcurrentLinkedQueue<Item> apartmentItems = new ConcurrentLinkedQueue<>();
-    boolean canComeIn = true;
-    int counter = 0;
+    private ConcurrentLinkedQueue<Item> apartmentItems = new ConcurrentLinkedQueue<>();
+    private int ownerCount = 0;
+    private int thiefCount = 0;
 
-    public synchronized void openDoor(Thread thread) {
+    public ConcurrentLinkedQueue<Item> getApartmentItems() {
+        return apartmentItems;
+    }
+
+    public void addApartmentItem(Item item) {
+        apartmentItems.add(item);
+    }
+
+    public void deleteApartmentItem(Item item) {
+        apartmentItems.remove(item);
+    }
+
+    public void lockApartment(Thread thread) {
         if (thread instanceof Owner) {
-            canComeIn = true;
-            counter++;
-        } else if (thread instanceof Thief) {
-            canComeIn = false;
+            ownerCount++;
+        } else {
+            thiefCount++;
         }
     }
 
-    public void closeDoor(Thread thread) {
+    public void unlockApartment(Thread thread) {
         synchronized (this) {
             if (thread instanceof Owner) {
-                counter--;
-                if (counter == 0) {
-                    canComeIn = true;
-                    this.notify();
-                }
-                System.out.println(counter);
-            } else if (thread instanceof Thief) {
-                canComeIn = true;
-                this.notify();
+                ownerCount--;
+            } else {
+                thiefCount--;
             }
+            this.notify();
         }
     }
+
+    public int getOwnerCount() {
+        return ownerCount;
+    }
+
+    public int getThiefCount() {
+        return thiefCount;
+    }
+
 }
