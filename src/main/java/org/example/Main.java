@@ -40,6 +40,8 @@ import static java.lang.Thread.sleep;
 public class Main {
     public static void main(String[] args) throws InterruptedException {
         List<Item> initialListWithItems = new ArrayList<>();
+        List<Item> allStolenItems = new ArrayList<>();
+
         int ownersCount = (int) (Math.random() * 10 + 5);
         int thievesCount = (int) (Math.random() * 10 + 5);
         System.out.println("Хозяев: " + ownersCount);
@@ -55,16 +57,23 @@ public class Main {
                 });
         threadPool.startThreads();
         threadPool.joinAllThreads();
+        threadPool.threads.forEach(
+                thread -> {
+                    if (thread instanceof Thief) {
+                        allStolenItems.addAll(((Thief) thread).getBackpackWithItems().getItemsInBackpack());
+                    }
+                }
+        );
 
-        List<Item> listOfItemsFromThiefBackpacks = threadPool.getAllStolenItems();
+//        List<Item> listOfItemsFromThiefBackpacks = allStolenItems;
         List<Item> listOfItemsLeftInApartment = apartment.getApartmentItems().stream().toList();
         List<Item> newListOfItemsToCompare = new ArrayList<>();
         newListOfItemsToCompare.addAll(listOfItemsLeftInApartment);
-        newListOfItemsToCompare.addAll(listOfItemsFromThiefBackpacks);
+        newListOfItemsToCompare.addAll(allStolenItems);
 
         System.out.println("Всего принесли " + initialListWithItems.size() + " вещей");
         System.out.println("В квартире остались " + listOfItemsLeftInApartment.size() + " вещей: " + listOfItemsLeftInApartment);
-        System.out.println("В рюкзаках нашли " + listOfItemsFromThiefBackpacks.size() + " вещей:" + listOfItemsFromThiefBackpacks);
+        System.out.println("В рюкзаках нашли " + allStolenItems.size() + " вещей:" + allStolenItems);
         if (initialListWithItems.size() == newListOfItemsToCompare.size()
                 && initialListWithItems.containsAll(newListOfItemsToCompare)) {
             System.out.println("Никакие вещи не потерялись");

@@ -10,7 +10,7 @@ public class Owner extends Thread {
     public Owner(Apartment apartment, Backpack backpack) {
         this.apartment = apartment;
         this.backpackWithItems = backpack;
-        backpackWithItems.fillBackpackWithItems();
+        backpackWithItems.fillOwnersBackpackWithItems();
     }
 
     public List<Item> getBackpackWithItems() {

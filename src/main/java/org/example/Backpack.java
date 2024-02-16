@@ -5,26 +5,19 @@ import java.util.List;
 import java.util.Random;
 
 public class Backpack {
-    private final int backpackCapacity;
-    private int leftBackpackStorage;
+    private int backpackCapacity;
+//    private int leftBackpackStorage;
     private List<Item> itemsInBackpack = new ArrayList<>();
     private final Random random = new Random();
 
     public Backpack() {
-        this.backpackCapacity = getRandom() + 10;
-        this.leftBackpackStorage = getBackpackCapacity();
+        this.backpackCapacity = getRandom() + 5;
+//        this.leftBackpackStorage = getBackpackCapacity();
     }
 
     public void addItemsToBackPack(Item item) {
         itemsInBackpack.add(item);
-    }
-
-    public int getLeftBackpackStorage() {
-        return leftBackpackStorage;
-    }
-
-    public void setLeftBackpackStorage(int leftBackpackStorage) {
-        this.leftBackpackStorage = leftBackpackStorage;
+        backpackCapacity -= item.getWeight();
     }
 
     public List<Item> getItemsInBackpack() {
@@ -37,14 +30,18 @@ public class Backpack {
 
     public void addItemInBackpack(Item item) {
         this.itemsInBackpack.add(item);
+        backpackCapacity -= item.getWeight();
+
     }
 
-    public void fillBackpackWithItems() {
+    public void fillOwnersBackpackWithItems() {
         while (true) {
             Item item = new Item(getRandom(), getRandom());
-            if (leftBackpackStorage - item.getWeight() >= 0) {
-                leftBackpackStorage -= item.getWeight();
-                addItemInBackpack(item);
+            if (backpackCapacity - item.getWeight() > 0) {
+                itemsInBackpack.add(item);
+                backpackCapacity -= item.getWeight();
+//                backpackCapacity -= item.getWeight();
+//                addItemInBackpack(item);
             } else {
                 break;
             }

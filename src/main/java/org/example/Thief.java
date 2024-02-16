@@ -20,14 +20,20 @@ public class Thief extends Thread {
     }
 
     public void addItemsToBackpack(List<Item> items) {
+        try {
         items.forEach(item -> {
-            if (backpackWithItems.getLeftBackpackStorage() - item.getWeight() >= 0) {
-                backpackWithItems.setLeftBackpackStorage(backpackWithItems.getLeftBackpackStorage() - item.getWeight());
-                backpackWithItems.addItemsToBackPack(item);
-                thiefPrinter.printThreadDoesAction(currentThread(), item);
-                apartment.deleteApartmentItem(item);
-            }
+                if (backpackWithItems.getBackpackCapacity() - item.getWeight() >= 0) {
+                    backpackWithItems.addItemsToBackPack(item);
+                    thiefPrinter.printThreadDoesAction(currentThread(), item);
+                    apartment.deleteApartmentItem(item);
+                } else {
+                    throw new NoStorageLeftException("В рюкзаке нет места на ещё один предмет");
+                }
         });
+        } catch (NoStorageLeftException e) {
+            System.out.println(Arrays.toString(e.getStackTrace()));
+            System.out.println(e.getMessage());
+        }
     }
 
     public synchronized void stealItemsFromApartment(ConcurrentLinkedQueue<Item> apartmentItems) {
