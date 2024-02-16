@@ -53,10 +53,10 @@ public class Main {
                 .forEach(owner -> {
                     initialListWithItems.addAll(((Owner) owner).getBackpackWithItems());
                 });
-        threadPool.execute(null);
+        threadPool.startThreads();
         threadPool.joinAllThreads();
 
-        List<Item> listOfItemsFromThiefBackpacks = ThiefBackpackItems.getThiefBackpackItems();
+        List<Item> listOfItemsFromThiefBackpacks = threadPool.getAllStolenItems();
         List<Item> listOfItemsLeftInApartment = apartment.getApartmentItems().stream().toList();
         List<Item> newListOfItemsToCompare = new ArrayList<>();
         newListOfItemsToCompare.addAll(listOfItemsLeftInApartment);

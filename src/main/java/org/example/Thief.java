@@ -57,7 +57,6 @@ public class Thief extends Thread {
             apartment.lockApartment(currentThread());
             thiefPrinter.printThreadEnters(currentThread());
             stealItemsFromApartment(apartment.getApartmentItems());
-            ThiefBackpackItems.addBackpackItems(getBackpackWithItems());
             apartment.unlockApartment(currentThread());
             thiefPrinter.printThreadLeaves(currentThread());
         }
